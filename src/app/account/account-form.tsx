@@ -9,6 +9,7 @@ import Avatar from "./avatar";
 export default function AccountForm({ user }: { user: User | null }) {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
+  const [loadingEdge, setLoadingEdge] = useState(true);
   const [fullname, setFullname] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [website, setWebsite] = useState<string | null>(null);
@@ -17,6 +18,7 @@ export default function AccountForm({ user }: { user: User | null }) {
   const getProfile = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadingEdge(true);
 
       const { data, error, status } = await supabase
         .from("profiles")
@@ -40,6 +42,7 @@ export default function AccountForm({ user }: { user: User | null }) {
       alert("Error loading user data!");
     } finally {
       setLoading(false);
+      setLoadingEdge(false);
     }
   }, [user, supabase]);
 
@@ -75,6 +78,44 @@ export default function AccountForm({ user }: { user: User | null }) {
       alert("Error updating the data!");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function edgeUpdateProfile({
+    username,
+    website,
+    avatar_url,
+  }: {
+    username: string | null;
+    fullname: string | null;
+    website: string | null;
+    avatar_url: string | null;
+  }) {
+    try {
+      setLoadingEdge(true);
+
+      const response = await fetch("/auth/edge-update-n", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          id: user?.id as string,
+          full_name: fullname,
+          username,
+          website,
+          avatar_url,
+          updated_at: new Date().toISOString,
+        }),
+      });
+      if (!response.ok) throw new Error("Error updating the data!");
+      alert("Profile updated!");
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      alert("Error updating the data!");
+    } finally {
+      setLoadingEdge(false);
     }
   }
 
@@ -132,6 +173,15 @@ export default function AccountForm({ user }: { user: User | null }) {
           disabled={loading}
         >
           {loading ? "Loading ..." : "Update"}
+        </button>
+        <button
+          className="button primary block"
+          onClick={() =>
+            edgeUpdateProfile({ fullname, username, website, avatar_url })
+          }
+          disabled={loadingEdge}
+        >
+          {loadingEdge ? "Loading ..." : "Update via serveless"}
         </button>
       </div>
 
